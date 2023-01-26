@@ -1,19 +1,26 @@
 #!/bin/bash
+# RSYNC SERVER BACKUP
+# This script allows for automatic dumping of mysql/mariadb databases inside docker containers as well as transfering them to
+# a remote machine via rsync/ssh. The script is primarily made for usage on a specific VPS and not developed for general
+# usage. Usage on other servers is also possible (might need to change parts of the config / script below) but not officially
+# supported.
 
-# DB Container Backup Script Template
-# ---
-# This backup script can be used to automatically backup databases in docker containers.
-# It currently supports mariadb, mysql and bitwardenrs containers.
-# 
-
+# Config:
+# Amount of days that database backups should be kept in the dump directory before being deleted
 DAYS=2
+# Hostname or IP address of the backup destination machine
 REMOTE_HOST=testhost
+# Remote machine user
 REMOTE_USER=user
+# If applicable: Remote machine password. Leave empty if you are using SSH keys and are not prompted for a password at the login.
 REMOTE_PASS=password
+# Set the directory to which the dumped database files will be synced here
+REMOTE_DB_DIR=~/remote/dir/here
+# Local directory to which database files are dumped
 DBDUMPDIR=./db_backup
 
 
-# backup all mysql/mariadb containers
+# Backup all mysql/mariadb containers
 
 CONTAINER=$(docker ps --format '{{.Names}}:{{.Image}}' | grep 'mysql\|mariadb' | cut -d":" -f1)
 
@@ -37,7 +44,11 @@ for i in $CONTAINER; do
     fi
 done
 
+rsync -a -r $DBDUMPDIR/* $REMOTE_USER@$REMOTE_HOST:$REMOTE_DB_DIR
+exit
+
 # Sync files to remote server
+
 SYNCPATHS="./paths.txt"
 while IFS= read -r line
 do
@@ -47,3 +58,4 @@ do
   rsync -a -r $SRC/* $REMOTE_USER@$REMOTE_HOST:$DST
 
 done < "$SYNCPATHS"
+exit
