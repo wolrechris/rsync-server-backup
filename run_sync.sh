@@ -9,22 +9,23 @@
 # Amount of days that database backups should be kept in the dump directory before being deleted
 DAYS=2
 # Hostname or IP address of the backup destination machine
-REMOTE_HOST=testhost
+REMOTE_HOST=remotehost.example.com
 # Remote machine user
-REMOTE_USER=user
+REMOTE_USER=username
 # If applicable: Remote machine password. Leave empty if you are using SSH keys and are not prompted for a password at the login.
-REMOTE_PASS=password
-# Set the directory to which the dumped database files will be synced here
-REMOTE_DB_DIR=~/remote/dir/here
+REMOTE_PASS=
+# Set the directory to which the dumped database files will be synced here (give full path without short formats)
+REMOTE_DB_DIR=/backup_directory_here/backup/db/
 # Local directory to which database files are dumped
 DBDUMPDIR=./db_backup
 
 
-# Backup all mysql/mariadb containers
 
+# Backup all mysql/mariadb containers
+echo "Starting database dump..."
 CONTAINER=$(docker ps --format '{{.Names}}:{{.Image}}' | grep 'mysql\|mariadb' | cut -d":" -f1)
 
-echo $CONTAINER
+echo "Containers found: $CONTAINER" 
 
 if [ ! -d $DBDUMPDIR ]; then
     mkdir -p $DBDUMPDIR
@@ -44,8 +45,8 @@ for i in $CONTAINER; do
     fi
 done
 
-rsync -a -r $DBDUMPDIR/* $REMOTE_USER@$REMOTE_HOST:$REMOTE_DB_DIR
-exit
+echo "Starting rsync of dumped databases..."
+rsync -av -r $DBDUMPDIR/* $REMOTE_USER@$REMOTE_HOST:$REMOTE_DB_DIR
 
 # Sync files to remote server
 
@@ -53,9 +54,14 @@ SYNCPATHS="./paths.txt"
 while IFS= read -r line
 do
   echo "Running rsync for path-pair $line"
-  SRC=cut -d ">" -f 1 $line
-  DST= cut -d ">" -f 2 $line
-  rsync -a -r $SRC/* $REMOTE_USER@$REMOTE_HOST:$DST
-
+  SRC=$(echo $line | cut -d ">" -f 1)
+  DST=$(echo $line | cut -d ">" -f 2)
+  rsync -av -r $SRC/* $REMOTE_USER@$REMOTE_HOST:$DST
+  echo "SRC=$SRC"
+  echo "DST=$DST"
+ 
 done < "$SYNCPATHS"
+
+
+echo "End of script reached, exiting..."
 exit

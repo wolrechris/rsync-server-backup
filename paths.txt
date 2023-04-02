@@ -1,1 +1,2 @@
-~/source/path/here>~/destination/path/here
+/dockerdata/>/backup_directory_here/backup/dockerdata/
+/opt/>/backup_directory_here/backup/opt/
