@@ -9,17 +9,21 @@
 # Amount of days that database backups should be kept in the dump directory before being deleted
 DAYS=2
 # Hostname or IP address of the backup destination machine
-REMOTE_HOST=remotehost.example.com
+REMOTE_HOST=host.example.com
 # Remote machine user
-REMOTE_USER=username
+REMOTE_USER=user
 # If applicable: Remote machine password. Leave empty if you are using SSH keys and are not prompted for a password at the login.
 REMOTE_PASS=
-# Set the directory to which the dumped database files will be synced here (give full path without short formats)
-REMOTE_DB_DIR=/backup_directory_here/backup/db/
+# Set the directory to which the dumped database files will be synced here
+REMOTE_DB_DIR=/mnt/remote/db/dir
 # Local directory to which database files are dumped
-DBDUMPDIR=./db_backup
+DBDUMPDIR=/mnt/local/db/dir
+# Token for Gotify (if you do not want to use Gotify, uncomment the second-to-last line of this script.
+GOTIFY_TOKEN=supersecuretoken
 
 
+echo "Starting backup at:"
+date
 
 # Backup all mysql/mariadb containers
 echo "Starting database dump..."
@@ -46,7 +50,7 @@ for i in $CONTAINER; do
 done
 
 echo "Starting rsync of dumped databases..."
-rsync -av -r $DBDUMPDIR/* $REMOTE_USER@$REMOTE_HOST:$REMOTE_DB_DIR
+rsync --archive --recursive --verbose --delete $DBDUMPDIR/ $REMOTE_USER@$REMOTE_HOST:$REMOTE_DB_DIR
 
 # Sync files to remote server
 
@@ -56,12 +60,17 @@ do
   echo "Running rsync for path-pair $line"
   SRC=$(echo $line | cut -d ">" -f 1)
   DST=$(echo $line | cut -d ">" -f 2)
-  rsync -av -r $SRC/* $REMOTE_USER@$REMOTE_HOST:$DST
+  # Uncomment ONLY ONE of the two lines.
+ 
+  #rsync --archive --recursive --verbose --delete $SRC/ $REMOTE_USER@$REMOTE_HOST:$DST
+  rsync --archive --recursive --verbose --delete $SRC/ $REMOTE_USER@$REMOTE_HOST:$DST | sed '0,/^$/d'
   echo "SRC=$SRC"
   echo "DST=$DST"
  
 done < "$SYNCPATHS"
 
-
 echo "End of script reached, exiting..."
+
+# Take latest.log and send it to gotify
+curl "https://notifications.example.com/message?token=$GOTIFY_TOKEN" -F "title=Server backup rsync on $(date)" -F "message=$(cat /path/to/latest.log)" -F "priority=5"
 exit
