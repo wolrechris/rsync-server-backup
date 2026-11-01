@@ -4,10 +4,6 @@ This script allows for the automatic dumping of mysql/mariadb databases inside d
 
 The database backup part of this application is based on the [database container backup scripts](https://github.com/ChristianLempa/scripts/tree/main/db-container-backup) by Christian Lempa.
 
-# Dockerbackup script
-
-This script allows for automatic dumping of mysql/mariadb databases inside docker containers as well as transfering them to a remote machine via rsync/ssh. The script is primarily made for usage on a specific VPS and not developed for general usage. Usage on other servers is also possible (might need to change parts of the config / script below) but not officially supported. The database backup part of this application is based on the [database container backup scripts](https://github.com/ChristianLempa/scripts/tree/main/db-container-backup) by Christian Lempa.
-
 ## Configuration
 
 ### Sync configuration
